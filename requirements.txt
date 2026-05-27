@@ -1,0 +1,12 @@
+flask
+pandas
+nltk
+beautifulsoup4
+requests
+scikit-learn
+python-docx
+PyPDF2
+serpapi
+google-search-results
+docx2txt
+python-dotenv

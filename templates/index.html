@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PlagCheck — Plagiarism Detector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0e12;
+      --surface: #13161d;
+      --surface2: #1a1e28;
+      --border: #252a38;
+      --accent: #6ee7b7;
+      --accent2: #38bdf8;
+      --danger: #f87171;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --radius: 14px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 80px;
+    }
+
+    /* HEADER */
+    header {
+      padding: 32px 40px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    header span {
+      font-size: 13px;
+      color: var(--muted);
+      margin-left: auto;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* MAIN LAYOUT */
+    main { max-width: 860px; margin: 48px auto; padding: 0 24px; }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px;
+      margin-bottom: 28px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--surface2); }
+    .tab-btn.active {
+      background: var(--surface2);
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+    .tab-icon { font-size: 16px; }
+
+    /* PANELS */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .card-label {
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+
+    /* TEXTAREA */
+    .textarea-wrap { position: relative; }
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      padding: 16px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+    .word-count {
+      position: absolute;
+      bottom: 12px; right: 14px;
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    /* FILE DROP ZONE */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--surface2);
+      position: relative;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(110, 231, 183, 0.04);
+    }
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .dropzone-icon { font-size: 36px; margin-bottom: 12px; }
+    .dropzone p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .dropzone p strong { color: var(--text); }
+    .file-selected {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(110, 231, 183, 0.08);
+      border: 1px solid rgba(110, 231, 183, 0.2);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .file-selected.show { display: flex; }
+    .file-name { color: var(--accent); font-family: 'DM Mono', monospace; font-size: 12px; }
+
+    /* MULTI FILE */
+    .multi-files-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .file-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'DM Mono', monospace;
+      color: var(--muted);
+    }
+    .file-chip span { color: var(--accent2); }
+
+    /* SUBMIT BUTTON */
+    .btn-check {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0c0e12;
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 0.2px;
+      margin-top: 20px;
+    }
+    .btn-check:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-check:active { transform: translateY(0); }
+    .btn-check:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* LOADER */
+    .loader-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 60px 20px;
+      text-align: center;
+    }
+    .loader-wrap.show { display: flex; }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text { color: var(--muted); font-size: 14px; line-height: 1.7; }
+    .loader-text strong { color: var(--text); display: block; font-size: 16px; margin-bottom: 4px; }
+
+    /* ERROR */
+    .error-box {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--danger);
+      margin-bottom: 20px;
+    }
+    .error-box.show { display: flex; }
+
+    /* RESULTS */
+    .results-wrap { display: none; }
+    .results-wrap.show { display: block; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .results-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .results-badge {
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(110, 231, 183, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(110, 231, 183, 0.2);
+    }
+
+    /* NO RESULTS */
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .no-results .icon { font-size: 48px; margin-bottom: 16px; }
+    .no-results h3 { font-family: 'Syne', sans-serif; color: var(--accent); font-size: 20px; margin-bottom: 8px; }
+    .no-results p { font-size: 14px; line-height: 1.6; }
+
+    /* TABLE */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead tr {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      padding: 14px 16px;
+      text-align: left;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+
+    .sentence-cell {
+      max-width: 300px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .source-link {
+      color: var(--accent2);
+      text-decoration: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .source-link:hover { text-decoration: underline; }
+
+    /* SIMILARITY BADGE */
+    .sim-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .sim-high { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+    .sim-med  { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .sim-low  { background: rgba(110,231,183,0.1); color: #6ee7b7; border: 1px solid rgba(110,231,183,0.25); }
+
+    /* PROGRESS BAR */
+    .sim-bar-wrap { display: flex; align-items: center; gap: 10px; }
+    .sim-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      min-width: 80px;
+    }
+    .sim-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+    .fill-high { background: var(--danger); }
+    .fill-med  { background: #fbbf24; }
+    .fill-low  { background: var(--accent); }
+
+    /* CLEAR BTN */
+    .btn-clear {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .btn-clear:hover { border-color: var(--danger); color: var(--danger); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">🔍</div>
+  <h1>PlagCheck</h1>
+  <span>v2.0 — Plagiarism Detector</span>
+</header>
+
+<main>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('text', this)">
+      <span class="tab-icon">✏️</span> Text Check
+    </button>
+    <button class="tab-btn" onclick="switchTab('file', this)">
+      <span class="tab-icon">📄</span> File Check
+    </button>
+    <button class="tab-btn" onclick="switchTab('similarity', this)">
+      <span class="tab-icon">🔗</span> Compare Files
+    </button>
+  </div>
+
+  <!-- ERROR BOX -->
+  <div class="error-box" id="errorBox">
+    <span>⚠️</span>
+    <span id="errorMsg"></span>
+  </div>
+
+  <!-- ===== TEXT PANEL ===== -->
+  <div class="panel active" id="panel-text">
+    <div class="card">
+      <div class="card-label">Input Text</div>
+      <div class="textarea-wrap">
+        <textarea id="textInput" placeholder="Paste your text here to check for plagiarism..." oninput="updateWordCount(this, 'wc1')"></textarea>
+        <span class="word-count" id="wc1">0 words</span>
+      </div>
+      <button class="btn-check" onclick="submitCheck('text')">Check for Plagiarism →</button>
+    </div>
+  </div>
+
+  <!-- ===== FILE PANEL ===== -->
+  <div class="panel" id="panel-file">
+    <div class="card">
+      <div class="card-label">Upload Document</div>
+      <div class="dropzone" id="dropzone1"
+           ondragover="handleDragOver(event, 'dropzone1')"
+           ondragleave="handleDragLeave('dropzone1')"
+           ondrop="handleDrop(event, 'fileInput', 'fileSelected1', 'fileName1')">
+        <input type="file" id="fileInput" accept=".txt,.pdf,.docx"
+               onchange="showFileName('fileInput', 'fileSelected1', 'fileName1')"/>
+        <div class="dropzone-icon">📂</div>
+        <p><strong>Click to upload</strong> or drag and drop<br>Supports PDF, DOCX, TXT files</p>
+      </div>
+      <div class="file-selected" id="fileSelected1">
+        <span>📎</span>
+        <span class="file-name" id="fileName1"></span>
+      </div>
+      <button class="btn-check" onclick="submitCheck('file')">Check for Plagiarism →</button>
+    </div>
+  </div>
+
+  <!-- ===== SIMILARITY PANEL ===== -->
+  <div class="panel" id="panel-similarity">
+    <div class="card">
+      <div class="card-label">Upload Multiple Files</div>
+      <div class="dropzone" id="dropzone2"
+           ondragover="handleDragOver(event, 'dropzone2')"
+           ondragleave="handleDragLeave('dropzone2')"
+           ondrop="handleDropMulti(event)">
+        <input type="file" id="filesInput" accept=".txt,.pdf,.docx" multiple
+               onchange="showMultiFiles('filesInput', 'multiFilesList')"/>
+        <div class="dropzone-icon">📁</div>
+        <p><strong>Click to upload multiple files</strong> or drag and drop<br>Minimum 2 files required for comparison</p>
+      </div>
+      <div class="multi-files-list" id="multiFilesList"></div>
+      <button class="btn-check" onclick="submitCheck('similarity')">Compare Files →</button>
+    </div>
+  </div>
+
+  <!-- LOADER -->
+  <div class="loader-wrap" id="loader">
+    <div class="spinner"></div>
+    <div class="loader-text">
+      <strong>Analysing your text...</strong>
+      This may take 20–40 seconds.<br>We are searching the web for matches.
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-wrap" id="resultsWrap">
+    <div class="results-header">
+      <div class="results-title" id="resultsTitle">Results</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="results-badge" id="resultsBadge"></span>
+        <button class="btn-clear" onclick="clearResults()">✕ Clear</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead id="resultsHead"></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- NO RESULTS -->
+  <div class="no-results" id="noResults" style="display:none;">
+    <div class="icon">✅</div>
+    <h3>No plagiarism detected</h3>
+    <p>Great news! We could not find significant matches<br>for the submitted text in our search.</p>
+  </div>
+
+</main>
+
+<script>
+  // ---- Tab switching ----
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+    btn.classList.add('active');
+    clearResults();
+    hideError();
+  }
+
+  // ---- Word count ----
+  function updateWordCount(el, countId) {
+    const words = el.value.trim() === '' ? 0 : el.value.trim().split(/\s+/).length;
+    document.getElementById(countId).textContent = words + ' word' + (words !== 1 ? 's' : '');
+  }
+
+  // ---- File name display ----
+  function showFileName(inputId, selectedId, nameId) {
+    const file = document.getElementById(inputId).files[0];
+    if (file) {
+      document.getElementById(nameId).textContent = file.name;
+      document.getElementById(selectedId).classList.add('show');
+    }
+  }
+
+  function showMultiFiles(inputId, listId) {
+    const files = document.getElementById(inputId).files;
+    const list = document.getElementById(listId);
+    list.innerHTML = '';
+    Array.from(files).forEach((f, i) => {
+      list.innerHTML += `<div class="file-chip"><span>File ${i+1}</span> ${f.name}</div>`;
+    });
+  }
+
+  // ---- Drag and drop ----
+  function handleDragOver(e, id) {
+    e.preventDefault();
+    document.getElementById(id).classList.add('dragover');
+  }
+  function handleDragLeave(id) {
+    document.getElementById(id).classList.remove('dragover');
+  }
+  function handleDrop(e, inputId, selectedId, nameId) {
+    e.preventDefault();
+    document.getElementById('dropzone1').classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const input = document.getElementById(inputId);
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      showFileName(inputId, selectedId, nameId);
+    }
+  }
+  function handleDropMulti(e) {
+    e.preventDefault();
+    document.getElementById('dropzone2').classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length) {
+      const input = document.getElementById('filesInput');
+      const dt = new DataTransfer();
+      Array.from(files).forEach(f => dt.items.add(f));
+      input.files = dt.files;
+      showMultiFiles('filesInput', 'multiFilesList');
+    }
+  }
+
+  // ---- Error handling ----
+  function showError(msg) {
+    document.getElementById('errorMsg').textContent = msg;
+    document.getElementById('errorBox').classList.add('show');
+  }
+  function hideError() {
+    document.getElementById('errorBox').classList.remove('show');
+  }
+
+  // ---- Clear results ----
+  function clearResults() {
+    document.getElementById('resultsWrap').classList.remove('show');
+    document.getElementById('noResults').style.display = 'none';
+    document.getElementById('loader').classList.remove('show');
+    hideError();
+  }
+
+  // ---- Similarity badge class ----
+  function simClass(val) {
+    if (val >= 0.6) return 'sim-high';
+    if (val >= 0.3) return 'sim-med';
+    return 'sim-low';
+  }
+  function fillClass(val) {
+    if (val >= 0.6) return 'fill-high';
+    if (val >= 0.3) return 'fill-med';
+    return 'fill-low';
+  }
+
+  // ---- Main submit ----
+  async function submitCheck(mode) {
+    hideError();
+    clearResults();
+
+    const formData = new FormData();
+    formData.append('option', mode);
+
+    if (mode === 'text') {
+      const text = document.getElementById('textInput').value.trim();
+      if (!text) { showError('Please enter some text to check.'); return; }
+      formData.append('text', text);
+    } else if (mode === 'file') {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) { showError('Please upload a file.'); return; }
+      formData.append('file', file);
+    } else if (mode === 'similarity') {
+      const files = document.getElementById('filesInput').files;
+      if (files.length < 2) { showError('Please upload at least 2 files.'); return; }
+      Array.from(files).forEach(f => formData.append('files', f));
+    }
+
+    // Show loader
+    document.getElementById('loader').classList.add('show');
+    document.querySelectorAll('.btn-check').forEach(b => b.disabled = true);
+
+    try {
+      const response = await fetch('/check', { method: 'POST', body: formData });
+      const result = await response.json();
+
+      document.getElementById('loader').classList.remove('show');
+      document.querySelectorAll('.btn-check').forEach(b => b.disabled = false);
+
+      if (result.error) {
+        showError(result.error);
+        return;
+      }
+
+      // ---- Render results ----
+      if (result.mode === 'plagiarism') {
+        renderPlagiarismResults(result.data);
+      } else if (result.mode === 'similarity') {
+        renderSimilarityResults(result.data);
+      }
+
+    } catch (err) {
+      document.getElementById('loader').classList.remove('show');
+      document.querySelectorAll('.btn-check').forEach(b => b.disabled = false);
+      showError('Network error. Please check your connection and try again.');
+    }
+  }
+
+  // ---- Render plagiarism results ----
+  function renderPlagiarismResults(data) {
+    if (!data || data.length === 0) {
+      document.getElementById('noResults').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('resultsTitle').textContent = 'Plagiarism Results';
+    document.getElementById('resultsBadge').textContent = data.length + ' match' + (data.length !== 1 ? 'es' : '') + ' found';
+
+    document.getElementById('resultsHead').innerHTML = `
+      <tr>
+        <th>#</th>
+        <th>Matched Sentence</th>
+        <th>Source</th>
+        <th>Similarity</th>
+      </tr>`;
+
+    let rows = '';
+    data.forEach((row, i) => {
+      const val = row.Similarity || 0;
+      const pct = Math.round(val * 100);
+      rows += `
+        <tr>
+          <td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;">${i + 1}</td>
+          <td class="sentence-cell">${escapeHtml(row.Sentence || '')}</td>
+          <td><a class="source-link" href="${escapeHtml(row.Source || '')}" target="_blank" rel="noopener">${escapeHtml(row.Source || '')}</a></td>
+          <td>
+            <div class="sim-bar-wrap">
+              <span class="sim-badge ${simClass(val)}">${pct}%</span>
+              <div class="sim-bar"><div class="sim-bar-fill ${fillClass(val)}" style="width:${pct}%"></div></div>
+            </div>
+          </td>
+        </tr>`;
+    });
+
+    document.getElementById('resultsBody').innerHTML = rows;
+    document.getElementById('resultsWrap').classList.add('show');
+  }
+
+  // ---- Render similarity results ----
+  function renderSimilarityResults(data) {
+    if (!data || data.length === 0) {
+      document.getElementById('noResults').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('resultsTitle').textContent = 'File Similarity Results';
+    document.getElementById('resultsBadge').textContent = data.length + ' pair' + (data.length !== 1 ? 's' : '') + ' compared';
+
+    document.getElementById('resultsHead').innerHTML = `
+      <tr>
+        <th>File 1</th>
+        <th>File 2</th>
+        <th>Similarity</th>
+      </tr>`;
+
+    let rows = '';
+    data.forEach(row => {
+      const val = row.Similarity || 0;
+      const pct = Math.round(val * 100);
+      rows += `
+        <tr>
+          <td style="font-family:'DM Mono',monospace;color:var(--accent2);font-size:13px;">${escapeHtml(row['File 1'])}</td>
+          <td style="font-family:'DM Mono',monospace;color:var(--accent2);font-size:13px;">${escapeHtml(row['File 2'])}</td>
+          <td>
+            <div class="sim-bar-wrap">
+              <span class="sim-badge ${simClass(val)}">${pct}%</span>
+              <div class="sim-bar"><div class="sim-bar-fill ${fillClass(val)}" style="width:${pct}%"></div></div>
+            </div>
+          </td>
+        </tr>`;
+    });
+
+    document.getElementById('resultsBody').innerHTML = rows;
+    document.getElementById('resultsWrap').classList.add('show');
+  }
+
+  // ---- XSS protection ----
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
