@@ -26,6 +26,12 @@ text_processing.py
 requirements.txt
 ```
 
+## Images
+
+### Project UI
+1.sampleUI1
+2.sampleUI2
+
 ## How to Run
 
 1. Install dependencies
